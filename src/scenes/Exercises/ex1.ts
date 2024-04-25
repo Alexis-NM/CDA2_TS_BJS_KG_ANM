@@ -81,6 +81,8 @@ export class Ex1 implements CreateSceneClass {
         userInstructions.top = '30%';
         advancedTexture.addControl(userInstructions);
         
+
+        
         // BUTTONS
         const buttonUp = Button.CreateSimpleButton('buttonUp', '+')
         buttonUp.horizontalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
@@ -111,26 +113,49 @@ export class Ex1 implements CreateSceneClass {
         advancedTexture.addControl(stackPanel);
         
         // INTERACTIONS
-        let counter: number = 2;
-        
+        let counter = 2;
+
         const counterDisplay = new TextBlock();
         counterDisplay.text = counter.toString();
         counterDisplay.color = "white";
         counterDisplay.fontSize = 56;
         counterDisplay.top = '-20%';
         advancedTexture.addControl(counterDisplay);
-        
+
+        // Function to add a prime number on counter
+
+        function isPrime(counter: number): boolean {
+            for(let i = 2; i < counter; i++)
+                if(counter % i === 0) return false;
+            return counter > 1;
+        }
+
+        function nextPrime(counter: number): number {
+            let next = counter + 1;
+            while(!isPrime(next)) next++;
+            return next;
+        }
+
+        function prevPrime(counter: number): number {
+            let prev = counter - 1;
+            while(!isPrime(prev)) prev--;
+            return prev;
+        }
+
         //TODO: Do something when buttons are pressed
         buttonDown.onPointerUpObservable.add(()=>{
-            counter--;
+            if(counter > 2){
+            counter = prevPrime(counter);
             counterDisplay.text = counter.toString();
+            console.log(counter);
+            }
         });
 
         buttonUp.onPointerUpObservable.add(()=>{
-            counter++;
+            counter = nextPrime(counter);
             counterDisplay.text = counter.toString();
+            console.log(counter);
         });
-        //* ***************************************
 
 
         /////////
