@@ -24,7 +24,7 @@ export class Ex1 implements CreateSceneClass {
         const scene = new Scene(engine);
 
         // This creates and positions a free camera (non-mesh)
-        const cameraRadius: number = 7;
+        const cameraRadius = 7;
         const camera = new ArcRotateCamera(
             "arcRotateCamera",
             0,
@@ -111,7 +111,7 @@ export class Ex1 implements CreateSceneClass {
         advancedTexture.addControl(stackPanel);
         
         // INTERACTIONS
-        let counter: number = 2;
+        let counter = 2;
         
         const counterDisplay = new TextBlock();
         counterDisplay.text = counter.toString();
@@ -119,16 +119,40 @@ export class Ex1 implements CreateSceneClass {
         counterDisplay.fontSize = 56;
         counterDisplay.top = '-20%';
         advancedTexture.addControl(counterDisplay);
-        
+
+        // Function to add a prime number on counter
+
+        function isPrime(counter: number): boolean {
+            for(let i = 2; i < counter; i++)
+                if(counter % i === 0) return false;
+            return counter > 1;
+        }
+
+        function nextPrime(counter: number): number {
+            let next = counter + 1;
+            while(!isPrime(next)) next++;
+            return next;
+        }
+
+        function prevPrime(counter: number): number {
+            let prev = counter - 1;
+            while(!isPrime(prev)) prev--;
+            return prev;
+        }
+
         //TODO: Do something when buttons are pressed
         buttonDown.onPointerUpObservable.add(()=>{
-            counter--;
+            if(counter > 2){
+            counter = prevPrime(counter);
             counterDisplay.text = counter.toString();
+            console.log(counter);
+            }
         });
 
         buttonUp.onPointerUpObservable.add(()=>{
-            counter++;
+            counter = nextPrime(counter);
             counterDisplay.text = counter.toString();
+            console.log(counter);
         });
         //* ***************************************
 

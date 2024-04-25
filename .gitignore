@@ -3,3 +3,69 @@ dist
 /test-results/
 /playwright-report/
 /playwright/.cache/
+
+# Ignorer les fichiers système et les fichiers cachés
+.DS_Store
+Thumbs.db
+
+# Ignorer les fichiers de configuration utilisateur
+*.swp
+*.swo
+*~
+*.log
+.DS_Store
+
+# Ignorer les fichiers de compilation et les fichiers binaires
+*.o
+*.out
+*.exe
+
+# Ignorer les dépendances et les fichiers générés par le langage de programmation
+node_modules/
+*.pyc
+__pycache__/
+*.class
+
+# Ignorer les fichiers de build et les répertoires de build
+build/
+dist/
+bin/
+target/
+
+# Ignorer les fichiers d'environnement et de configuration
+.env
+*.env.local
+.env.*.local
+.env.development
+.env.production
+.env.test
+
+# Ignorer les fichiers spécifiques à l'éditeur ou à l'IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Ignorer les fichiers de sauvegarde
+*.bak
+*.backup
+*.swp
+
+# Ignorer les fichiers de cache
+.cache/
+
+# Ignorer les fichiers de sauvegarde Emacs
+*~
+
+# Ignorer les fichiers d'environnement spécifiques
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Ignorer les fichiers de logs
+logs/
+*.log
+
+# Ignorer les fichiers de données temporaires
+.tmp/
