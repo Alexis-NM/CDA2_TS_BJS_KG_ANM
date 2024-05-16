@@ -1,5 +1,5 @@
 /*
- * STACK GEN AND SORT
+ * LED LETTERS BILLBOARD
  */
 
 import { Engine } from "@babylonjs/core/Engines/engine";
@@ -7,19 +7,22 @@ import { Scene } from "@babylonjs/core/scene";
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
-import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { CreateSceneClass } from "../createScene";
 import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
+import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
 import {
     AdvancedDynamicTexture,
-    Button,
+    InputText,
     Control,
-    StackPanel,
     TextBlock,
 } from "@babylonjs/gui";
-import { CreateBox } from "@babylonjs/core";
+import { GlowLayer } from "@babylonjs/core/Layers/glowLayer";
+import { CreateSphere, Mesh } from "@babylonjs/core";
+
+// Assets
+import ABC from "../../assets/data/ABC.json";
 
 export class TestScene implements CreateSceneClass {
     createScene = async (
@@ -30,18 +33,18 @@ export class TestScene implements CreateSceneClass {
         const scene = new Scene(engine);
 
         // This creates and positions a free camera (non-mesh)
-        const cameraRadius = 15;
+        const cameraRadius: number = 10;
         const camera = new ArcRotateCamera(
             "arcRotateCamera",
-            Math.PI / 2.5,
-            Math.PI / 2.1,
+            Math.PI / 2,
+            Math.PI / 2,
             cameraRadius,
             new Vector3(0, 1, 0),
             scene
         );
 
         camera.minZ = 0.1;
-        camera.wheelDeltaPercentage = 0.01;
+        camera.wheelDeltaPercentage = 0;
         camera.upperRadiusLimit = cameraRadius;
         camera.lowerRadiusLimit = cameraRadius;
         camera.panningSensibility = 0;
@@ -57,125 +60,81 @@ export class TestScene implements CreateSceneClass {
 
         // INSTRUCTIONS
         const userInstructions = new TextBlock();
-        userInstructions.text = `STACK GEN AND SORT
-            Use the buttons to generate a stack of random cubes
-            and to sort them from the biggest (bottom) to the smallest (top)`;
+        userInstructions.text = `LED LETTERS BILLBOARD
+            Insert a text to be displayed on the billboard`;
         userInstructions.color = "white";
         userInstructions.fontSize = 20;
         userInstructions.top = "30%";
         advancedTexture.addControl(userInstructions);
 
-        // BUTTONS
-        const generateButton = Button.CreateSimpleButton(
-            "generateButton",
-            "GENERATE"
-        );
-        const sortButton = Button.CreateSimpleButton("sortButton", "SORT");
+        // GENERATE THE BILLBOARD
+        //Create PBR material
+        let pbr: PBRMaterial;
+        let matColor = new Color3(0.02, 0.02, 0.01);
 
-        generateButton.horizontalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
-        generateButton.cornerRadius = 10;
-        generateButton.width = "200px";
-        generateButton.height = "50px";
-        generateButton.color = "white";
-        generateButton.background = "#AA7777";
-        if (generateButton.textBlock != undefined)
-            generateButton.textBlock.color = "white";
+        // Billboard unit dimensions
+        const x: number = 7;
+        const y: number = 9;
+        const spacing: number = 0.1;
 
-        sortButton.horizontalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
-        sortButton.cornerRadius = 10;
-        sortButton.width = "200px";
-        sortButton.height = "50px";
-        sortButton.color = "white";
-        sortButton.background = "#7777AA";
-        if (sortButton.textBlock != undefined)
-            sortButton.textBlock.color = "white";
+        let leds: Mesh[] = new Array(x * y);
+        let led: Mesh;
+        for (let row = 0; row < y; row++) {
+            for (let col = 0; col < x; col++) {
+                led = CreateSphere(
+                    `${col}`,
+                    {
+                        diameter: 0.1,
+                    },
+                    scene
+                );
+                pbr = new PBRMaterial(`mat${row * x + col}`, scene);
+                pbr.metallic = 0;
+                pbr.roughness = 0.5;
+                pbr.albedoColor = matColor;
+                led.material = pbr;
+                led.position.x = col * spacing;
+                led.position.y = row * spacing;
 
-        const stackPanel = new StackPanel();
-        stackPanel.isVertical = false;
-        stackPanel.spacing = 50;
-        stackPanel.top = "15%";
-        stackPanel.addControl(generateButton);
-        stackPanel.addControl(sortButton);
-        stackPanel.zIndex = 1000;
-        advancedTexture.addControl(stackPanel);
+                leds[row * x + col] = led;
+            }
+        }
 
-        //TODO: Do something when buttons are pressed
+        // DRAW SOMETHING ON BILLBOARD
+        // Clear spaces
+        let letter = ABC["A"].replace(/\s/g, "");
+        for (let index = 0; index < letter.length; index++) {
+            if (letter[index] === "1") {
+                (leds[index].material as StandardMaterial).emissiveColor =
+                    Color3.White();
+            }
+        }
 
-        // Variables globales
-        let totalHeight = 0;
-        const blockSpacing = 0.3;
+        // INPUT
+        const input = new InputText();
+        input.width = 0.2;
+        input.maxWidth = 0.4;
+        input.height = "40px";
+        input.text = "Enter your text here";
+        input.autoStretchWidth = true;
+        input.thickness = 0;
+        input.color = "#AAAAAAAA";
+        input.background = "#332533FF";
+        input.focusedBackground = "#221522FF";
+        input.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+        input.top = "10%";
+        input.onFocusSelectAll = true;
+        advancedTexture.addControl(input);
 
-        // Objet pour stocker les boîtes créées avec leurs dimensions
-        const boxMap: {
-            [name: string]: {
-                length: number;
-                width: number;
-                height: number;
-                mesh: Mesh;
-            };
-        } = {};
+        //TODO: Do something when "Enter" is pressed
+        // input.onKeyboardEventProcessedObservable.add(({key})=>{
+        //     if(key === "Enter")
+        //         pbr.roughness = 0;
+        //         pbr.subSurface.tintColor = new Color3(0.1,0.8,0.3);
+        //         animate = true;
+        // });
 
-        // Fonction pour générer un nouveau bloc avec des dimensions aléatoires
-        const generateBlock = () => {
-            // Taille aléatoire pour le nouveau bloc
-            const length = Math.random() + 1; // Longueur comprise entre 1 et 2
-            const width = Math.random() + 1; // Largeur comprise entre 1 et 1.5
-            const height = 0.5; // Hauteur fixe
-
-            // Créé une nouvelle boîte avec les dimensions aléatoires
-            const boxName = `box_${Object.keys(boxMap).length}`; // Nom unique pour chaque boîte basé sur le nombre actuel de boîtes
-            const box = CreateBox(
-                boxName,
-                {
-                    size: length,
-                    width: width,
-                    height: height,
-                },
-                scene
-            );
-
-            // Stocke les dimensions de la boîte et la boîte elle-même dans l'objet boxMap
-            boxMap[boxName] = { length, width, height, mesh: box };
-
-            // Position en fonction de la hauteur totale des blocs créés
-            const yPos = totalHeight;
-
-            // Ajoute la hauteur du bloc et l'espacement à la hauteur totale
-            totalHeight += height + blockSpacing;
-
-            // Positionne la nouvelle boîte
-            box.position = new Vector3(0, yPos, 0);
-
-            return box;
-        };
-
-        const sortBoxes = () => {
-            // Trie les boîtes en fonction de leur surface (length * width)
-            const sortedBoxNames = Object.keys(boxMap).sort((a, b) => {
-                const areaA = boxMap[a].length * boxMap[a].width;
-                const areaB = boxMap[b].length * boxMap[b].width;
-                return areaB - areaA; // Trie du plus grand au plus petit
-            });
-
-            // Change la position de chaque boîte en fonction du nouvel ordre
-            sortedBoxNames.forEach((boxName, index) => {
-                const yPos = index * (0.5 + blockSpacing); // Calcule la position y en fonction de l'index
-                const box = boxMap[boxName].mesh; // Trouve la boîte correspondante dans l'objet des boîtes
-                if (box) {
-                    box.position.y = yPos;
-                }
-            });
-        };
-
-        // Écouteur d'événement sur le bouton pour appeler la fonction generateBlock
-        generateButton.onPointerUpObservable.add(() => {
-            generateBlock();
-        });
-
-        // Écouter d'évenement sur le bouton pour appeler la fonction sortBoxes
-        sortButton.onPointerUpObservable.add(() => {
-            sortBoxes();
-        });
+        //TODO: [OPTIONAL] Do something every second (alternate ON/OFF(padawan level) or pan letters(jedi level))
 
         /**************************** */
 
@@ -208,6 +167,12 @@ export class TestScene implements CreateSceneClass {
             skyboxColor: new Color3(0.01, 0.01, 0.01),
             createGround: false,
         });
+
+        const glow = new GlowLayer("glow", scene, {
+            mainTextureFixedSize: 1024,
+            blurKernelSize: 64,
+        });
+        glow.intensity = 0.5;
 
         return scene;
     };

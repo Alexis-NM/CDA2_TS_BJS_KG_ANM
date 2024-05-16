@@ -135,7 +135,6 @@ export class Ex2 implements CreateSceneClass {
 
         //TODO: Do something when buttons are pressed
 
-      
         function toggleButtonShape(button: Button): void {
             if (button.image) {
                 button.image.source =
