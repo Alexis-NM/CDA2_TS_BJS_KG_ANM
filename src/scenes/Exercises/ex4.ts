@@ -1,6 +1,6 @@
 /*
-* LED LETTERS BILLBOARD
-*/
+ * LED LETTERS BILLBOARD
+ */
 
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Scene } from "@babylonjs/core/scene";
@@ -12,12 +12,17 @@ import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
-import { AdvancedDynamicTexture, InputText, Control, TextBlock } from "@babylonjs/gui";
+import {
+    AdvancedDynamicTexture,
+    InputText,
+    Control,
+    TextBlock,
+} from "@babylonjs/gui";
 import { GlowLayer } from "@babylonjs/core/Layers/glowLayer";
 import { CreateSphere, Mesh } from "@babylonjs/core";
 
 // Assets
-import ABC from  "../../assets/data/ABC.json"
+import * as ABCJson from "../../assets/data/ABC.json";
 
 export class Ex4 implements CreateSceneClass {
     createScene = async (
@@ -28,11 +33,11 @@ export class Ex4 implements CreateSceneClass {
         const scene = new Scene(engine);
 
         // This creates and positions a free camera (non-mesh)
-        const cameraRadius: number = 10;
+        const cameraRadius = 10;
         const camera = new ArcRotateCamera(
             "arcRotateCamera",
-            Math.PI/2,
-            Math.PI/2,
+            Math.PI / 2,
+            Math.PI / 2,
             cameraRadius,
             new Vector3(0, 1, 0),
             scene
@@ -51,55 +56,24 @@ export class Ex4 implements CreateSceneClass {
         camera.attachControl(canvas, true);
 
         /**************************** */
-        const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI('UI');
+        const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
         // INSTRUCTIONS
         const userInstructions = new TextBlock();
-        userInstructions.text = 
-            `LED LETTERS BILLBOARD
+        userInstructions.text = `LED LETTERS BILLBOARD
             Insert a text to be displayed on the billboard`;
         userInstructions.color = "white";
         userInstructions.fontSize = 20;
-        userInstructions.top = '30%';
+        userInstructions.top = "30%";
         advancedTexture.addControl(userInstructions);
-        
-        // GENERATE THE BILLBOARD
-        //Create PBR material
-        let pbr: PBRMaterial;
-        let matColor = new Color3(0.02,0.02,0.01);
 
         // Billboard unit dimensions
-        const x: number = 7;
-        const y: number = 9;
-        const spacing: number = 0.1;
+        const x = 7;
+        const y = 9;
+        const spacing = 0.1;
+        const letterSpacing = x * spacing;
 
-        let leds: Mesh[] = new Array(x*y);
-        let led: Mesh;
-        for (let row = 0; row < y; row++) {
-            for (let col = 0; col < x; col++) {
-                led = CreateSphere(`${col}`,{
-                    diameter: 0.1
-                }, scene);
-                pbr = new PBRMaterial(`mat${(row*x)+col}`, scene);
-                pbr.metallic = 0;
-                pbr.roughness = 0.5;
-                pbr.albedoColor = matColor
-                led.material = pbr;
-                led.position.x = col * spacing;
-                led.position.y = row * spacing;
-
-                leds[(row*x)+col] = led;
-            }
-        }
-
-        // DRAW SOMETHING ON BILLBOARD
-        // Clear spaces
-        let letter = ABC['A'].replace(/\s/g, '');
-        for (let index = 0; index < letter.length; index++) {
-            if(letter[index] === '1'){
-                (leds[index].material as StandardMaterial).emissiveColor = Color3.White();
-            }           
-        }
+        const ABC: Alphabet = ABCJson as Alphabet;
 
         // INPUT
         const input = new InputText();
@@ -113,33 +87,98 @@ export class Ex4 implements CreateSceneClass {
         input.background = "#332533FF";
         input.focusedBackground = "#221522FF";
         input.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
-        input.top = '10%';
+        input.top = "10%";
         input.onFocusSelectAll = true;
         advancedTexture.addControl(input);
 
-        //TODO: Do something when "Enter" is pressed
-        // input.onKeyboardEventProcessedObservable.add(({key})=>{
-        //     if(key === "Enter")
-        //         pbr.roughness = 0;
-        //         pbr.subSurface.tintColor = new Color3(0.1,0.8,0.3);
-        //         animate = true;
-        // });
+        interface Alphabet {
+            [key: string]: string;
+        }
 
-        //TODO: [OPTIONAL] Do something every second (alternate ON/OFF(padawan level) or pan letters(jedi level))
+        function createBillboardLetter(scene: Scene, offsetX: number) {
+            const leds: Mesh[] = new Array(x * y);
+            let led: Mesh;
+            const matColor = new Color3(0.02, 0.02, 0.01);
+            let pbr: PBRMaterial;
 
-        /**************************** */
+            for (let row = 0; row < y; row++) {
+                for (let col = 0; col < x; col++) {
+                    led = CreateSphere(
+                        `led_${offsetX}_${col}_${row}`,
+                        {
+                            diameter: 0.1,
+                        },
+                        scene
+                    );
+                    pbr = new PBRMaterial(`mat${row * x + col}`, scene);
+                    pbr.metallic = 0;
+                    pbr.roughness = 0.5;
+                    pbr.albedoColor = matColor;
+                    led.material = pbr;
+                    led.position.x = -col * spacing + offsetX;
+                    led.position.y = -row * spacing + 1;
+                    leds[row * x + col] = led;
+                }
+            }
+            return leds;
+        }
+
+        const allLeds: Mesh[] = [];
+
+        function clearPreviousLetters() {
+            allLeds.forEach((led) => {
+                led.dispose(); // Supprime les leds précédentes
+            });
+            allLeds.length = 0; // Vide le tableau
+        }
+
+        function displayTextOnBillboard(text: string) {
+            clearPreviousLetters(); // Efface les lettres précédentes
+
+            const letters = text.toUpperCase().split("");
+            letters.reverse();
+
+            letters.forEach((letter, index) => {
+                if (ABC[letter]) {
+                    const leds = createBillboardLetter(
+                        scene,
+                        index * letterSpacing
+                    );
+                    allLeds.push(...leds);
+
+                    const letterPattern = ABC[letter].replace(/\s/g, "");
+                    for (let j = 0; j < letterPattern.length; j++) {
+                        if (letterPattern[j] === "1") {
+                            const col = j % x;
+                            const row = Math.floor(j / x);
+                            const ledIndex = row * x + col;
+                            if (ledIndex < leds.length) {
+                                (
+                                    leds[ledIndex].material as PBRMaterial
+                                ).emissiveColor = Color3.White();
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Handle input event
+        input.onKeyboardEventProcessedObservable.add(({ key }) => {
+            if (key === "Enter") {
+                const inputText = input.text;
+                input.text = ""; // Clear the input field for the next entry
+                displayTextOnBillboard(inputText); // Display the input text on the billboard
+            }
+        });
 
         /////////
         // ENV
         /////////
-        //Directional light               
+        //Directional light
         const dlightPosition = new Vector3(0.02, -0.05, -0.05);
         const dLightOrientation = new Vector3(0, 20, 0);
-        const dLight = new DirectionalLight(
-            "dLight",
-            dlightPosition,
-            scene
-        );
+        const dLight = new DirectionalLight("dLight", dlightPosition, scene);
         dLight.intensity = 0.2;
         dLight.position.y = 10;
 
@@ -147,7 +186,11 @@ export class Ex4 implements CreateSceneClass {
         dLight.position = dLightOrientation;
 
         // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
-        const hLight = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
+        const hLight = new HemisphericLight(
+            "light",
+            new Vector3(0, 1, 0),
+            scene
+        );
 
         // Default intensity is 1. Let's dim the light a small amount
         hLight.intensity = 0.7;
@@ -155,7 +198,7 @@ export class Ex4 implements CreateSceneClass {
         const env = scene.createDefaultEnvironment({
             createSkybox: true,
             skyboxSize: 150,
-            skyboxColor: new Color3(0.01,0.01,0.01),
+            skyboxColor: new Color3(0.01, 0.01, 0.01),
             createGround: false,
         });
 
