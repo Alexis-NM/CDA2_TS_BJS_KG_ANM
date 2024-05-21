@@ -7,7 +7,6 @@ import { Scene } from "@babylonjs/core/scene";
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { CreateTorusKnot } from "@babylonjs/core/Meshes/Builders/torusKnotBuilder";
-import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { CreateSceneClass } from "../../createScene";
 import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";

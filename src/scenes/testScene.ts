@@ -22,7 +22,7 @@ import { GlowLayer } from "@babylonjs/core/Layers/glowLayer";
 import { CreateSphere, Mesh } from "@babylonjs/core";
 
 // Assets
-import ABC from "../../assets/data/ABC.json";
+import * as ABCJson from "../../assets/data/ABC.json";
 
 export class TestScene implements CreateSceneClass {
     createScene = async (
@@ -33,7 +33,7 @@ export class TestScene implements CreateSceneClass {
         const scene = new Scene(engine);
 
         // This creates and positions a free camera (non-mesh)
-        const cameraRadius: number = 10;
+        const cameraRadius = 10;
         const camera = new ArcRotateCamera(
             "arcRotateCamera",
             Math.PI / 2,
@@ -67,48 +67,13 @@ export class TestScene implements CreateSceneClass {
         userInstructions.top = "30%";
         advancedTexture.addControl(userInstructions);
 
-        // GENERATE THE BILLBOARD
-        //Create PBR material
-        let pbr: PBRMaterial;
-        let matColor = new Color3(0.02, 0.02, 0.01);
-
         // Billboard unit dimensions
-        const x: number = 7;
-        const y: number = 9;
-        const spacing: number = 0.1;
+        const x = 7;
+        const y = 9;
+        const spacing = 0.1;
+        const letterSpacing = x * spacing;
 
-        let leds: Mesh[] = new Array(x * y);
-        let led: Mesh;
-        for (let row = 0; row < y; row++) {
-            for (let col = 0; col < x; col++) {
-                led = CreateSphere(
-                    `${col}`,
-                    {
-                        diameter: 0.1,
-                    },
-                    scene
-                );
-                pbr = new PBRMaterial(`mat${row * x + col}`, scene);
-                pbr.metallic = 0;
-                pbr.roughness = 0.5;
-                pbr.albedoColor = matColor;
-                led.material = pbr;
-                led.position.x = col * spacing;
-                led.position.y = row * spacing;
-
-                leds[row * x + col] = led;
-            }
-        }
-
-        // DRAW SOMETHING ON BILLBOARD
-        // Clear spaces
-        let letter = ABC["A"].replace(/\s/g, "");
-        for (let index = 0; index < letter.length; index++) {
-            if (letter[index] === "1") {
-                (leds[index].material as StandardMaterial).emissiveColor =
-                    Color3.White();
-            }
-        }
+        const ABC: Alphabet = ABCJson as Alphabet;
 
         // INPUT
         const input = new InputText();
@@ -126,17 +91,86 @@ export class TestScene implements CreateSceneClass {
         input.onFocusSelectAll = true;
         advancedTexture.addControl(input);
 
-        //TODO: Do something when "Enter" is pressed
-        // input.onKeyboardEventProcessedObservable.add(({key})=>{
-        //     if(key === "Enter")
-        //         pbr.roughness = 0;
-        //         pbr.subSurface.tintColor = new Color3(0.1,0.8,0.3);
-        //         animate = true;
-        // });
+        interface Alphabet {
+            [key: string]: string;
+        }
 
-        //TODO: [OPTIONAL] Do something every second (alternate ON/OFF(padawan level) or pan letters(jedi level))
+        function createBillboardLetter(scene: Scene, offsetX: number) {
+            const leds: Mesh[] = new Array(x * y);
+            let led: Mesh;
+            const matColor = new Color3(0.02, 0.02, 0.01);
+            let pbr: PBRMaterial;
 
-        /**************************** */
+            for (let row = 0; row < y; row++) {
+                for (let col = 0; col < x; col++) {
+                    led = CreateSphere(
+                        `led_${offsetX}_${col}_${row}`,
+                        {
+                            diameter: 0.1,
+                        },
+                        scene
+                    );
+                    pbr = new PBRMaterial(`mat${row * x + col}`, scene);
+                    pbr.metallic = 0;
+                    pbr.roughness = 0.5;
+                    pbr.albedoColor = matColor;
+                    led.material = pbr;
+                    led.position.x = -col * spacing + offsetX;
+                    led.position.y = -row * spacing + 1;
+                    leds[row * x + col] = led;
+                }
+            }
+            return leds;
+        }
+
+        const allLeds: Mesh[] = [];
+
+        function clearPreviousLetters() {
+            allLeds.forEach((led) => {
+                led.dispose(); // Supprime les leds précédentes
+            });
+            allLeds.length = 0; // Vide le tableau
+        }
+
+        function displayTextOnBillboard(text: string) {
+            clearPreviousLetters(); // Efface les lettres précédentes
+
+            const letters = text.toUpperCase().split("");
+            letters.reverse();
+
+            letters.forEach((letter, index) => {
+                if (ABC[letter]) {
+                    const leds = createBillboardLetter(
+                        scene,
+                        index * letterSpacing
+                    );
+                    allLeds.push(...leds);
+
+                    const letterPattern = ABC[letter].replace(/\s/g, "");
+                    for (let j = 0; j < letterPattern.length; j++) {
+                        if (letterPattern[j] === "1") {
+                            const col = j % x;
+                            const row = Math.floor(j / x);
+                            const ledIndex = row * x + col;
+                            if (ledIndex < leds.length) {
+                                (
+                                    leds[ledIndex].material as PBRMaterial
+                                ).emissiveColor = Color3.White();
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Handle input event
+        input.onKeyboardEventProcessedObservable.add(({ key }) => {
+            if (key === "Enter") {
+                const inputText = input.text;
+                input.text = ""; // Clear the input field for the next entry
+                displayTextOnBillboard(inputText); // Display the input text on the billboard
+            }
+        });
 
         /////////
         // ENV
